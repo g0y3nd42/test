@@ -112,12 +112,28 @@
   </div>
 
   <script>
-  async function storeLoginToken(token) {
-    localStorage.setItem("loginToken", token);
+  function storeLoginToken(token) {
+    const tokenData = {
+      token: token,
+      timestamp: new Date().getTime()
+    };
+    localStorage.setItem("loginToken", JSON.stringify(tokenData));
   }
 
-  async function isTokenValid() {
-    return !!localStorage.getItem("loginToken");
+  function isTokenValid() {
+    const storedData = localStorage.getItem("loginToken");
+    if (!storedData) return false;
+
+    const { token, timestamp } = JSON.parse(storedData);
+    const now = new Date().getTime();
+    const FIVE_HOURS = 5 * 60 * 60 * 1000;
+
+    return token && (now - timestamp) < FIVE_HOURS;
+  }
+
+  // 👇 Redirect only if a valid token exists
+  if (isTokenValid()) {
+    window.location.href = "dashboard.html";
   }
 
   document.getElementById("emailForm").addEventListener("submit", async (e) => {
@@ -136,7 +152,7 @@
       const data = await response.json();
 
       if (response.ok) {
-        await storeLoginToken(data.token);
+        storeLoginToken(data.token);
         window.location.href = "dashboard.html";
       } else {
         alert("Login failed: " + data.error);
@@ -145,10 +161,6 @@
       alert("Server error: " + err.message);
     }
   });
-
-  if (isTokenValid()) {
-    window.location.href = "dashboard.html";
-  }
 </script>
 
 </body>
