@@ -1,5 +1,6 @@
+
 // api/login.js
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
  const firebaseConfig = {
@@ -12,21 +13,33 @@ import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
       measurementId: "G-GLNQXTX2SY"
     };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { email, password } = req.body;
-
   try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const auth = getAuth(app);
     const userCred = await signInWithEmailAndPassword(auth, email, password);
     const token = await userCred.user.getIdToken();
-    res.status(200).json({ token });
+
+    return res.status(200).json({ token });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Firebase Auth error:", error); // Will show in Vercel logs
+    return res.status(400).json({ error: error.message });
   }
 }
+
