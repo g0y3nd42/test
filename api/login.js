@@ -1,50 +1,32 @@
-import fetch from 'node-fetch';
+// api/login.js
+import { initializeApp } from "firebase/app";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+
+ const firebaseConfig = {
+      apiKey: "AIzaSyAk6-ojS17WvRyCn-4mqQgOxRtk6aa1hAc",
+      authDomain: "nutritiontracker-56702.firebaseapp.com",
+      projectId: "nutritiontracker-56702",
+      storageBucket: "nutritiontracker-56702.appspot.com",
+      messagingSenderId: "670664900798",
+      appId: "1:670664900798:web:f4e0104661ddd985b81eef",
+      measurementId: "G-GLNQXTX2SY"
+    };
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ message: 'Only POST requests allowed' });
-    return;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    res.status(400).json({ message: 'Email and password are required' });
-    return;
-  }
-
   try {
-    const apiKey = process.env.AIzaSyAk6-ojS17WvRyCn-4mqQgOxRtk6aa1hAc; // Your Firebase web API key
-
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password,
-          returnSecureToken: true
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    if (data.error) {
-      return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
-    // If login successful, you can send back token or user info
-    res.status(200).json({ 
-      message: 'Login successful',
-      token: data.idToken,
-      refreshToken: data.refreshToken,
-      uid: data.localId
-    });
-
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    const token = await userCred.user.getIdToken();
+    res.status(200).json({ token });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(400).json({ error: error.message });
   }
 }
